@@ -1,13 +1,22 @@
 #!/usr/bin/env ruby
 
+$stdout.sync = true
+
 require "bundler/setup"
 require "superscript"
 
-unless ARGV.length < 1
+unless ARGV.length < 2
   puts "USAGE: superscript dsl.rb script.rb"
   exit 1
 end
-require "./#{ARGV[0]}"
+
+best_guess_path = if ARGV[0].start_with? "/"
+  ARGV[0]
+else
+  File.join(".", ARGV[0])
+end
+
+require best_guess_path
 
 ctx_classname = File.basename(ARGV[0]).split(".").first.capitalize
 ctx = (eval "#{ctx_classname}").new
@@ -19,7 +28,7 @@ else
   runner = Superscript::Runner.new
   loop do
     print "> "
-    contents = gets
+    contents = STDIN.gets
     value = runner.run! ctx, contents: contents
     puts " => #{value.inspect}"
   end
