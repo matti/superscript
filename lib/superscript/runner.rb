@@ -36,12 +36,17 @@ module Superscript
         when :line
           puts "< " + contents.split("\n")[tp.lineno - 1]
         when :c_call
-          @armed = false
-          trace.disable
-
-          puts "Error: Command not found '#{tp.method_id}'"
-
-          exit 1
+          next if ["String","Float", "Integer"].include? tp.defined_class.name
+          case tp.method_id
+          when :singleton_method_added
+            puts "Error: Deffining methods is not allowed"
+            trace.disable
+            exit 1
+          else
+            puts "Error: Command not found '#{tp.method_id}'"
+            trace.disable
+            exit 1
+          end
         when :call
           if tp.defined_class.name == "Superscript::Ctx"
             @armed = false
