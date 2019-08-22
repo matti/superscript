@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "superscript"
+
+if ARGV[0]
+  runner = Superscript::Runner.new ARGV[0]
+  runner.run!
+else
+  ctx = Superscript::Ctx.new
+  runner = Superscript::Runner.new
+  loop do
+    print "> "
+    contents = gets
+    runner.run! ctx: ctx, contents: contents
+  end
+end
