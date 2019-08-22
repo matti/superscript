@@ -56,8 +56,9 @@ module Superscript
 
       value = begin
         trace.enable
-        ctx.instance_eval contents, @path
+        v = ctx.instance_eval contents, @path
         trace.disable
+        v
       rescue Exception => ex
         case ex.class.to_s
         when "SystemExit"

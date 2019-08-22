@@ -12,6 +12,7 @@ else
   loop do
     print "> "
     contents = gets
-    runner.run! ctx: ctx, contents: contents
+    value = runner.run! ctx: ctx, contents: contents
+    puts " => #{value.inspect}"
   end
 end
