@@ -14,7 +14,9 @@ module Superscript
 
       @armed = false
       trace = TracePoint.new do |tp|
-        #p [@armed, tp.path, tp.lineno, tp.method_id, tp.event, tp.defined_class]
+        if ENV["SUPERSCRIPT_DEBUG"]
+          p [@armed, tp.path, tp.lineno, tp.method_id, tp.event, tp.defined_class]
+        end
 
         if tp.defined_class.name == "BasicObject" && tp.method_id == :instance_eval
           if tp.event == :script_compiled
