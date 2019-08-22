@@ -8,9 +8,8 @@ module Superscript
       end
     end
 
-    def run!(ctx:nil, contents:nil)
+    def run!(ctx, contents:nil)
       contents = File.read(@path) unless contents
-      ctx = Superscript::Ctx.new unless ctx
 
       @armed = false
       trace = TracePoint.new do |tp|
@@ -26,7 +25,7 @@ module Superscript
           end
         end
 
-        if tp.event == :return && tp.defined_class.name == "Superscript::Ctx"
+        if tp.event == :return && tp.defined_class.ancestors.include?(Superscript::Ctx)
           @armed = true
         end
 
@@ -48,7 +47,7 @@ module Superscript
             exit 1
           end
         when :call
-          if tp.defined_class.name == "Superscript::Ctx"
+          if tp.defined_class.ancestors.include? Superscript::Ctx
             @armed = false
           end
         end

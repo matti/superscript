@@ -3,16 +3,24 @@
 require "bundler/setup"
 require "superscript"
 
-if ARGV[0]
-  runner = Superscript::Runner.new ARGV[0]
-  runner.run!
+unless ARGV.length == 2
+  puts "USAGE: superscript dsl.rb script.rb"
+  exit 1
+end
+require "./#{ARGV[0]}"
+
+ctx_classname = File.basename(ARGV[0]).split(".").first.capitalize
+ctx = (eval "#{ctx_classname}").new
+
+if ARGV[1]
+  runner = Superscript::Runner.new ARGV[1]
+  runner.run! ctx
 else
-  ctx = Superscript::Ctx.new
   runner = Superscript::Runner.new
   loop do
     print "> "
     contents = gets
-    value = runner.run! ctx: ctx, contents: contents
+    value = runner.run! ctx, contents: contents
     puts " => #{value.inspect}"
   end
 end
