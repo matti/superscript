@@ -5,8 +5,8 @@ $stdout.sync = true
 require "bundler/setup"
 require "superscript"
 
-unless ARGV.length < 2
-  puts "USAGE: superscript dsl.rb script.rb"
+if ARGV.length == 0
+  puts "USAGE: superscript dsl.rb [script.rb]"
   exit 1
 end
 
