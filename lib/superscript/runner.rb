@@ -17,7 +17,7 @@ module Superscript
           p [@armed, tp.path, tp.lineno, tp.method_id, tp.event, tp.defined_class]
         end
 
-        if tp.defined_class.name == "BasicObject" && tp.method_id == :instance_eval
+        if tp.defined_class&.name == "BasicObject" && tp.method_id == :instance_eval
           if tp.event == :script_compiled
             @armed = true
           elsif tp.event == :c_return
