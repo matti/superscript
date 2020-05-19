@@ -1,8 +1,7 @@
 module Superscript
   class Ctx
     def method_missing(*args)
-      puts "Error: No such command or variable '#{args.first}'"
-      exit 1
+      ::Superscript.error :ctx_method_missing, "No such command or variable '#{args.first}'"
     end
   end
 end

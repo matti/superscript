@@ -3,6 +3,10 @@ class Go < Superscript::Dsl
     puts "Go #{args.join(" ")}"
   end
 
+  def explode!
+    asdf
+  end
+
   def exit
     Kernel.exit
   end
