@@ -54,11 +54,6 @@ module Superscript
           @armed = true
         end
 
-        # when returns to execute our script, always force armed
-        if tp.path == @path
-          @armed = true
-        end
-
         next unless @armed
 
         case tp.event
