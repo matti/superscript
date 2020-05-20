@@ -1,6 +1,14 @@
 class Go < Superscript::Dsl
   def go(*args)
-    puts "Go #{args.join(" ")}"
+    self.say "Go #{args.join(" ")}!"
+  end
+
+  def say(message)
+    puts message
+  end
+
+  def now
+    Time.now
   end
 
   def explode!

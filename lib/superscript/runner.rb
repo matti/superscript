@@ -8,6 +8,8 @@ module Superscript
       pp exception
       pp exception.backtrace_locations
       error_message = exception
+    when :tp_call_superscript
+      error_message = "Can't touch this"
     when :ctx_method_missing, :tp_singleton_method_added, :tp_command_not_found
       error_message = args.first
     when :tp_class_define, :tp_module_define
@@ -26,6 +28,7 @@ module Superscript
   end
   class Runner
     def initialize path=nil
+      @armed = false
       @path = if path
         path
       else
@@ -33,25 +36,38 @@ module Superscript
       end
     end
 
+    def arm!(reason=nil)
+      p [:arm!, reason] if ENV["SUPERSCRIPT_DEBUG"]
+      @armed = true
+    end
+    def disarm!(reason=nil)
+      p [:disarm!, reason] if ENV["SUPERSCRIPT_DEBUG"]
+      @armed = false
+    end
+
     def run!(ctx, contents:nil)
       contents = File.read(@path) unless contents
 
-      @armed = false
+      disarm! :at_start
       trace = TracePoint.new do |tp|
         if ENV["SUPERSCRIPT_DEBUG"]
           p [@armed, tp.path, tp.lineno, tp.method_id, tp.event, tp.defined_class]
         end
 
+        if tp.event == :line && tp.path == @path && !@armed
+          arm!
+        end
+
         if tp.defined_class&.name == "BasicObject" && tp.method_id == :instance_eval
           if tp.event == :script_compiled
-            @armed = true
+            arm! :script_compiled
           elsif tp.event == :c_return
-            @armed = false
+            disarm! :script_done
           end
         end
 
-        if tp.event == :return && tp.defined_class.ancestors.include?(Superscript::Ctx)
-          @armed = true
+        if tp.path == @path && tp.event == :return && tp.defined_class.ancestors.include?(Superscript::Ctx)
+          arm! :return_to_script_from_dsl_calling_another_dsl_method
         end
 
         next unless @armed
@@ -71,7 +87,10 @@ module Superscript
           puts line
         when :c_call
           # allow calls to these classes
-          next if ["Array", "String","Float", "Integer"].include? tp.defined_class.name
+          if ["Array", "String","Float", "Integer"].include? tp.defined_class.name
+            disarm! :safe_class
+            next
+          end
 
           case tp.method_id
           when :singleton_method_added
@@ -106,13 +125,22 @@ module Superscript
             end
           end
         when :call
+          if tp.defined_class.ancestors.first.to_s == "#<Class:Superscript>"
+            tp.disable
+            ::Superscript.error :tp_call_superscript
+          end
           # disable if calling some other file
-          unless tp.path == @path
-            @armed = false
+          # but do not allow call to Superscript.error etc
+          if tp.path != @path
+            disarm! :calling_other_file
           end
-          if tp.defined_class.ancestors.include? Superscript::Ctx
-            @armed = false
+          tp.defined_class.ancestors.each do |ancestor|
+            if ancestor.to_s == "Superscript::Dsl"
+              disarm! :dsl_method
+              break
+            end
           end
+
         end
       end
 
