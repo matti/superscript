@@ -7,6 +7,10 @@ class Go < Superscript::Dsl
     puts message
   end
 
+  def struct
+    Struct.new(:name).new("joe")
+  end
+
   def now
     Time.now
   end

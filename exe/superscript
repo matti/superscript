@@ -4,11 +4,18 @@ $stdout.sync = true
 
 require "bundler/setup"
 require "superscript"
+require "optparse"
 
-if ARGV.length == 0
-  puts "USAGE: superscript dsl.rb [script.rb]"
-  exit 1
-end
+options = {
+  methods: false,
+  on_error_exec: nil
+}
+ARGV << "-h" if ARGV.empty?
+
+optparse = OptionParser.new do |opt|
+  opt.on('--allow-methods') { |o| options[:methods] = true }
+  opt.on('--on-error-exec CMD') { |o| options[:on_error_exec] = o }
+end.parse!
 
 best_guess_path = if ARGV[0].start_with? "/"
   ARGV[0]
@@ -22,10 +29,10 @@ ctx_classname = File.basename(ARGV[0]).split(".").first.capitalize
 ctx = (eval "#{ctx_classname}").new
 
 if ARGV[1]
-  runner = Superscript::Runner.new ARGV[1]
+  runner = Superscript::Runner.new ARGV[1], options
   runner.run! ctx
 else
-  runner = Superscript::Runner.new
+  runner = Superscript::Runner.new nil, options
   loop do
     print "> "
     contents = STDIN.gets

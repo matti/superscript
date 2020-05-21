@@ -1,39 +1,42 @@
 module Superscript
-  def self.error(where, *args)
-    puts "-- [ superscript error ] --"
-    error_message = ""
-    case where
-    when :exception
-      exception = args.first
-      pp exception
-      pp exception.backtrace_locations
-      error_message = exception
-    when :tp_call_superscript
-      error_message = "Can't touch this"
-    when :ctx_method_missing, :tp_singleton_method_added, :tp_command_not_found
-      error_message = args.first
-    when :tp_class_define, :tp_module_define
-      error_message = args.first
-    else
-      pp [:unknown_where, where, args]
-      error_message = args.join(" ")
-    end
-
-    puts error_message
-    if ENV["SUPERSCRIPT_ERROR_EXEC"]
-      error_exec_pid = spawn ENV["SUPERSCRIPT_ERROR_EXEC"], error_message
-      Process.wait error_exec_pid
-    end
-    exit 1
-  end
   class Runner
-    def initialize path=nil
+    def initialize path=nil, opts={}
+      @methods = opts[:methods] || false
+      @on_error_exec = opts[:on_error_exec]
+
       @armed = false
       @path = if path
         path
       else
         "<interactive>"
       end
+    end
+
+    def error!(where, *args)
+      puts "-- [ superscript error ] --"
+      error_message = ""
+      case where
+      when :exception
+        exception = args.first
+        pp exception
+        pp exception.backtrace_locations
+        error_message = exception
+      when :tp_call_superscript
+        error_message = "Can't touch this"
+      when :ctx_method_missing, :tp_singleton_method_added, :tp_command_not_found
+        error_message = args.first
+      when :tp_class_define, :tp_module_define
+        error_message = args.first
+      else
+        pp [:unknown_where, where, args]
+        error_message = args.join(" ")
+      end
+
+      puts error_message
+      if @on_error_exec
+        system("#{@on_error_exec} #{error_message}")
+      end
+      exit 1
     end
 
     def arm!(reason=nil)
@@ -74,7 +77,7 @@ module Superscript
 
         case tp.event
         when :class
-          ::Superscript.error :tp_module_define, "Defining modules is not allowed"
+          error! :tp_module_define, "Defining modules is not allowed"
         when :line
           lines = if tp.path == "<interactive>"
             contents.split("\n")
@@ -86,21 +89,28 @@ module Superscript
           puts "< #{tp.path}:#{tp.lineno-1}"
           puts line
         when :c_call
-          # allow calls to these classes
+          # allow calls to these instances
+          if tp.defined_class.ancestors.at(1) == Struct
+            disarm! :safe_instance
+            next
+          end
           if ["Array", "String","Float", "Integer"].include? tp.defined_class.name
-            disarm! :safe_class
+            disarm! :safe_instance
             next
           end
 
           case tp.method_id
           when :singleton_method_added
+            if @methods
+              next
+            end
             trace.disable
-            ::Superscript.error :tp_singleton_method_added, "Deffining methods is not allowed"
+            error! :tp_singleton_method_added, "Deffining methods is not allowed"
           else
             trace.disable
             case tp.defined_class.name
             when "Class"
-              ::Superscript.error :tp_class_define, "Defining classes is not allowed"
+              error! :tp_class_define, "Defining classes is not allowed"
             else
               class_name = case tp.defined_class.inspect
               when "Kernel"
@@ -121,13 +131,13 @@ module Superscript
                 "#{class_name}.#{tp.method_id}"
               end
 
-              ::Superscript.error :tp_command_not_found, "Command not found '#{command_name}'"
+              error! :tp_command_not_found, "Command not found '#{command_name}'"
             end
           end
         when :call
           if tp.defined_class.ancestors.first.to_s == "#<Class:Superscript>"
             tp.disable
-            ::Superscript.error :tp_call_superscript
+            error! :tp_call_superscript
           end
           # disable if calling some other file
           # but do not allow call to Superscript.error etc
@@ -157,7 +167,7 @@ module Superscript
           print "#{@path}:#{ex.backtrace_locations.first.lineno} "
           puts ex.message.split(" for ").first
         else
-          ::Superscript.error :exception, ex
+          error! :exception, ex
         end
       ensure
         trace.disable
