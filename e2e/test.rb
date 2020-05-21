@@ -1,5 +1,2 @@
-def muna
-
-end
-
-muna
+a = struct
+go a.name

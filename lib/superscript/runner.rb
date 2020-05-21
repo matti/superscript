@@ -18,10 +18,8 @@ module Superscript
       case where
       when :exception
         exception = args.first
-        pp exception
-        pp exception.backtrace_locations
         error_message = exception
-      when :tp_call_superscript
+      when :tp_call_superscript, :tp_call_superscript_global
         error_message = "Can't touch this"
       when :ctx_method_missing, :tp_singleton_method_added, :tp_command_not_found
         error_message = args.first
@@ -50,6 +48,10 @@ module Superscript
 
     def run!(ctx, contents:nil)
       contents = File.read(@path) unless contents
+      $__superscript_none_of_yer_business = self
+      ctx.define_singleton_method "method_missing" do |*args|
+        $__superscript_none_of_yer_business.error! :ctx_method_missing, "No such command or variable '#{args.first}'"
+      end
 
       disarm! :at_start
       trace = TracePoint.new do |tp|
@@ -88,6 +90,11 @@ module Superscript
           line = lines[tp.lineno-1].lstrip
           puts "< #{tp.path}:#{tp.lineno-1}"
           puts line
+
+          if line.match(/\$__superscript_none_of_yer_business/)
+            tp.disable
+            error! :tp_call_superscript_global
+          end
         when :c_call
           # allow calls to these instances
           if tp.defined_class.ancestors.at(1) == Struct
@@ -106,6 +113,8 @@ module Superscript
             end
             trace.disable
             error! :tp_singleton_method_added, "Deffining methods is not allowed"
+          when :method_missing
+            trace.disable
           else
             trace.disable
             case tp.defined_class.name
@@ -135,6 +144,11 @@ module Superscript
             end
           end
         when :call
+          if tp.method_id == :method_missing
+            tp.disable
+            next
+          end
+
           if tp.defined_class.ancestors.first.to_s == "#<Class:Superscript>"
             tp.disable
             error! :tp_call_superscript
