@@ -1,3 +1,7 @@
+Signal.trap "TERM" do
+  exit 0
+end
+
 module Superscript
   class Runner
     def initialize path=nil, opts={}

@@ -3,6 +3,10 @@ class Go < Superscript::Dsl
     self.say "Go #{args.join(" ")}!"
   end
 
+  def hang
+    sleep 9999
+  end
+
   def say(message)
     puts message
   end
