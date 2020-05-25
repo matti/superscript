@@ -32,10 +32,12 @@ if ARGV[1]
   runner = Superscript::Runner.new ARGV[1], options
   runner.run! ctx
 else
+  require "readline"
+
   runner = Superscript::Runner.new nil, options
   loop do
-    print "> "
-    contents = STDIN.gets
+    contents = Readline.readline "> ", true
+
     value = runner.run! ctx, contents: contents
     puts " => #{value.inspect}"
   end

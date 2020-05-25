@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    superscript (0.7.1)
+    superscript (0.8.0)
 
 GEM
   remote: https://rubygems.org/

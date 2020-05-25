@@ -38,7 +38,10 @@ module Superscript
       if @on_error_exec
         system("#{@on_error_exec} #{error_message}")
       end
-      exit 1
+
+      unless @path == "<interactive>"
+        exit 1
+      end
     end
 
     def arm!(reason=nil)
