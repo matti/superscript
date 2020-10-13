@@ -37,6 +37,14 @@ else
   runner = Superscript::Runner.new nil, options
   loop do
     contents = Readline.readline "> ", true
+    next if contents == ""
+
+    if contents == nil
+      puts "\n-- press ^D to end input"
+      contents = $stdin.readlines.join("\n")
+    end
+
+    next if contents == ""
 
     value = runner.run! ctx, contents: contents
     puts " => #{value.inspect}"
