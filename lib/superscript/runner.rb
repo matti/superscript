@@ -35,13 +35,13 @@ module Superscript
       end
 
       puts error_message
-      if @on_error_exec
-        system("#{@on_error_exec} #{error_message}")
-      end
 
-      unless @path == "<interactive>"
-        exit 1
+      caller.each do |c|
+        puts c
       end
+      system @on_error_exec, error_message if @on_error_exec
+
+      exit 1 unless @path == "<interactive>"
     end
 
     def arm!(reason=nil)
