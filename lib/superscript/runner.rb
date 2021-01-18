@@ -18,27 +18,26 @@ module Superscript
 
     def error!(where, *args)
       puts "-- [ superscript error ] --"
-      error_message = ""
-      case where
+      exception, error_message = case where
       when :exception
-        exception = args.first
-        error_message = exception
+        ex = args.first
+        [ex.class, ex]
       when :tp_call_superscript, :tp_call_superscript_global
-        error_message = "Can't touch this"
+        [:internal, "Can't touch this"]
       when :ctx_method_missing, :tp_singleton_method_added, :tp_command_not_found
-        error_message = args.first
+        [:internal, args.first]
       when :tp_class_define, :tp_module_define
-        error_message = args.first
+        [:internal, args.first]
       else
         pp [:unknown_where, where, args]
-        error_message = args.join(" ")
+        [:uknown, args.join(" ")]
       end
 
-      puts error_message
+      puts "#{exception}: #{error_message}"
 
-      caller.each do |c|
-        puts c
-      end
+      # caller.each do |c|
+      #   puts c
+      # end
       system @on_error_exec, error_message if @on_error_exec
 
       exit 1 unless @path == "<interactive>"

@@ -30,6 +30,10 @@ class Go < Superscript::Dsl
     asdf
   end
 
+  def raise!
+    raise "raising!"
+  end
+
   def exit
     Kernel.exit
   end
