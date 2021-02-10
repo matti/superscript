@@ -21,7 +21,7 @@ module Superscript
       exception, error_message = case where
       when :exception
         ex = args.first
-        [ex.class, ex]
+        [ex.class, ex.message]
       when :tp_call_superscript, :tp_call_superscript_global
         [:internal, "Can't touch this"]
       when :ctx_method_missing, :tp_singleton_method_added, :tp_command_not_found
